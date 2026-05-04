@@ -1,0 +1,36 @@
+syntax = "proto3"; 
+
+
+option go_package = "/proto/gen;mainapi";
+
+package main;
+
+
+service UserService {
+    rpc CreateUser (UserRequest) returns (UserResponse);
+    rpc UpdateUser (UserUpdateRequest) returns (UserResponse);
+    rpc GetUser (UserIdRequest) returns (UserResponse);
+    rpc DeactivateUser(UserIdRequest) returns (UserResponse);
+}
+
+message UserRequest {
+    string first_name = 1;
+    string last_name = 2;
+    string phone_number = 3;
+}
+
+message UserIdRequest {
+    int32 user_id = 1;
+}
+
+message UserUpdateRequest {
+    int32 user_id = 1;
+    string first_name = 2;
+    string last_name = 3;
+    string phone_number = 4;
+}
+
+message UserResponse {
+    string message = 1; 
+    bool status = 2;
+}

@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      target: server
+    image: go-grpc-server
+    ports:
+      - 50052:50052
+    environment:
+      - DB_USER=grpc_sqlc
+      - DB_PASSWORD=s3cr3t$password
+      - DB_NAME=grpc_sqlc_db
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - SERVER_PORT=50052
+      - DATABASE_URL=postgres://grpc_sqlc:s3cr3t$password@postgres:5432/grpc_sqlc_db?sslmode=disable
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - microservices_nginx_network
+
+  migrate:
+    image: migrate/migrate:v4.17.0
+    container_name: migrate
+    volumes:
+      - ./migrations:/migrations:ro
+    environment:
+      - DATABASE_URL=postgres://grpc_sqlc:s3cr3t$password@postgres:5432/grpc_sqlc_db?sslmode=disable
+    command: ["-path", "/migrations", "-database", "postgres://grpc_sqlc:s3cr3t$password@postgres:5432/grpc_sqlc_db?sslmode=disable", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices_nginx_network
+    restart: "no"
+
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=grpc_sqlc
+      - POSTGRES_PASSWORD=s3cr3t$password
+      - POSTGRES_DB=grpc_sqlc_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grpc_sqlc -d grpc_sqlc_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices_nginx_network
+
+
+networks:
+  microservices_nginx_network:
+    driver: bridge
+    external: true
+    name: microservices_nginx_network
+
+volumes:
+  postgres_data:
